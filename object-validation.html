@@ -1,0 +1,261 @@
+<script type="text/html" data-template-name="object-validation">
+    <div class="form-row">
+        <label><i class="fa fa-tag"></i> Name</label>
+        <input type="text" id="node-input-name" placeholder="Name">
+    </div>
+    <div class="form-row">
+        <label><i class="fa fa-list"></i> Object Origin</label>
+        <input type="text" id="node-input-data">
+        <input type="hidden" id="node-input-dataType">
+    </div>
+    <div class="form-row" id="node-input-order-div">
+        <label><i class="fa fa-check-circle"></i> Constraints</label>
+        <ol id="node-input-validators"></ol>
+    </div>
+    
+</script>
+<script type="text/javascript">
+    const validators = [
+        {value:"presence",label:"Required"},
+        {value:"email",label:"Email"},
+        {value:"equality",label:"Equal to property"},
+        {value:"format",label:"Regular Expression"},
+        {value:"maxlength",label:"Maximum Length"},
+        {value:"minlength",label:"Minimum Length"},
+        {value:"type",label:"Type"},
+        {value:"url",label:"URL"},
+        {value:"datetime",label:"Date"},
+        {value:"phone",label:"Phone"},
+        {value:"inclusion",label:"In"},
+        {value:"exclusion",label:"Not In"},
+        {value:"credit-card",label:"Credit Card"},
+        {value:"ipv4",label:"IP v4"},
+        {value:"ipv6",label:"IP v6"},
+    ];
+
+    const dataType = [
+        {value:"array",label:"Array"},
+        {value:"integer",label:"Integer"},
+        {value:"number",label:"Number"},
+        {value:"string",label:"String"},
+        {value:"date",label:"Date"},
+        {value:"boolean",label:"Boolean"}
+    ];
+
+    function insertConstraint(container, data){
+        container.css({
+            overflow: 'hidden',
+            whiteSpace: 'nowrap',
+            display: "flex",
+            "align-items":"center"
+        });
+        let inputRows = $('<div></div>',{style:"flex-grow:1"}).appendTo(container);
+        let column1 = $('<div></div>',{style:"display: inline-block;width:25%;padding: 0px 1px"}).appendTo(inputRows);
+        let column2 = $('<div/>',{style:"display: inline-block;width:25%;padding: 0px 1px"}).appendTo(inputRows);
+        let column3 = $('<div/>',{style:"display: inline-block;width:25%;padding: 0px 1px"}).appendTo(inputRows);
+        let column4 = $('<div/>',{style:"display: inline-block;width:23%;padding: 0px 1px"}).appendTo(inputRows);
+        
+        let inputProperty = $('<input type="text" class="node-input-column-property" style="width:100%;">').appendTo(column1);
+        if(data.property)
+            inputProperty.val(data.property);
+        let selectValidator = $('<select/>',{class:"node-input-column-validator",style:"width:100%;"}).appendTo(column2);
+        validators.forEach(item=>{
+            selectValidator.append($("<option></option>").val(item.value).text(item.label));
+        })
+        if(data.validator)
+            selectValidator.val(data.validator);
+
+        $(selectValidator).on('change', function(event) {
+            createValueField(column3, selectValidator.val(), '')
+        })
+
+        createValueField(column3, data.validator || 'presence', data.value)
+    
+        let inputError = $('<input type="text" class="node-input-column-error" style="width:100%">').appendTo(column4);
+        if(data.error)
+            inputError.val(data.error);
+    }
+
+    function createValueField(container, type, value, typeValue){
+        let inputValue = null
+        let inputType = null        
+        let types = null
+        let disabled = false
+        $(container).empty();
+        switch (type) {
+            case 'presence':{
+                types = ['str']
+                disabled = true
+            }break;
+            case 'datetime':{
+                types = ['str']
+                disabled = true
+            }break;
+            case 'email':{
+                types = ['str']
+                disabled = true
+            }break;
+            case 'equality':{
+                types = ['str']
+            }break;
+            case 'format':{
+                types = ['re']
+            }break;
+            case 'maxlength':{
+                types = ['num']
+            }break;
+            case 'minlength':{
+                types = ['num']
+            }break;
+            case 'type':{
+                inputValue = $('<input type="text" class="node-input-column-value">').css('width','100%').appendTo(container);
+                $(inputValue).typedInput({type:"string", types:[{
+                    value: "string",
+                    options: dataType
+                }]})
+                $(inputValue).typedInput('value', value)
+            }break;
+            case 'url':{
+                types = ['str']
+                disabled = true
+            }break;
+            case 'phone':{
+                types = ['str']
+                disabled = true
+            }break;
+            case 'credit-card':{
+                types = ['str']
+                disabled = true
+            }break;
+            case 'ipv4':{
+                types = ['str']
+                disabled = true
+            }break;
+            case 'ipv6':{
+                types = ['str']
+                disabled = true
+            }break;
+            case 'inclusion':{
+                types = ['json']
+            }break;
+            case 'exclusion':{
+                types = ['json']
+            }break;
+            default:{
+
+            }break;
+        }
+        if(type != 'type'){
+            inputValue = $('<input type="text" class="node-input-column-value">').css('width','100%').appendTo(container);
+            inputType = $('<input type="hidden" class="node-input-column-type">').appendTo(container);
+            $(inputValue).typedInput({
+                type: typeValue,
+                types: types,
+                typeField: inputType
+            })
+            $(inputValue).typedInput('value', value)
+        }
+        
+        if(disabled)
+            $(inputValue).typedInput('disable')
+        
+    }
+
+    function getConstraints() {          
+        
+        let result = []
+        try {
+            let validatorItems = $("#node-input-validators").editableList('items');
+            validatorItems.each(function(i) {
+                const property = $(this).find(".node-input-column-property").val()
+                const validator = $(this).find(".node-input-column-validator").val()
+                const value = $(this).find(".node-input-column-value").val()
+                const typeValue = $(this).find(".node-input-column-type").val()
+                const error = $(this).find(".node-input-column-error").val()
+                result.push({property, validator, value, error, typeValue})
+            });
+        } catch(e){
+            console.log('Error: ', e);
+        }        
+        return result 
+    }
+
+    
+
+
+    RED.nodes.registerType('object-validation',{
+        category: 'function',
+        color: '#21BA45',
+        defaults: {
+            name: { value: "" },
+            data: { value: 'payload', required: true },
+            dataType: { value: 'msg' },
+            constraints: { value: [] }          
+        },
+        inputs: 1,
+        outputs: 2,
+        outputLabels: ['success', 'error'],
+        icon: "font-awesome/fa-check-circle-o",
+        label: function() {
+            return this.name || 'object-validation';
+        },
+        oneditprepare: function () {
+            let _this = this
+
+            $("#node-input-data").typedInput({
+                type: 'msg',
+                types:['msg'],
+                typeField: "#node-input-dataType"
+            })
+
+            $("#node-input-validators").css('min-height','300px').editableList({
+                removable: true,
+                header: $('<div style="display:flex"></div>').append($.parseHTML("<div style='width:25%;display: inline; padding-left:15px'>Property</div><div style='width:25%;display: inline;'>Constraint</div><div style='width:25%;display: inline;'>Value</div><div style='width:25%;display: inline;'>Error Message</div>")),
+                addItem: function(container, index, data) {
+                    insertConstraint(container, data)
+                }
+            })
+
+            if(Array.isArray(this.constraints)){
+                this.constraints.forEach(x=>{
+                    $("#node-input-validators").editableList('addItem', x); 
+                })
+            }
+            
+        },
+        oneditsave: function() {
+            let _this = this
+            const constraints = getConstraints()
+            this.constraints = constraints
+        }
+    });
+</script>
+
+
+
+<script type="text/markdown" data-help-name="orm-db">
+Validation of JavaScript objects with the Validate.js library.
+
+### Inputs
+
+: payload (object) :  the payload of the message to publish.
+
+
+### Outputs
+
+1. Standard output
+: payload (object) : the standard output of the operation.
+
+2. Standard error
+: payload (string) : the standard error of the operation.
+
+### Details
+
+To validate the same property of an object but with different constraints, you must add each constraint to the list of constraints each time you want to validate that property.
+You should note that for constraints like 'Equal to property', 'Regular Expression', 'Maximum Length', 'Minimum Length', 'Date', 'Phone', 'Credit Card', 'IP v4', 'IP v6', 'URL', the property values must strictly be of type 'string'. 
+For the constraints 'In', 'Not In', the values are a JSON object ({ }) or an array ([ ]).
+
+### References
+
+ - [Validate.js](https://validatejs.org/#validate-js)
+</script>

@@ -1,0 +1,136 @@
+[
+    {
+        "id": "eb10185dd71072d1",
+        "type": "tab",
+        "label": "Validation",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "0842dfadb2f34813",
+        "type": "debug",
+        "z": "eb10185dd71072d1",
+        "name": "debug error",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 710,
+        "y": 280,
+        "wires": []
+    },
+    {
+        "id": "6aacb9ee9af43bd5",
+        "type": "debug",
+        "z": "eb10185dd71072d1",
+        "name": "debug success",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 720,
+        "y": 180,
+        "wires": []
+    },
+    {
+        "id": "ef855bc6db9bcb85",
+        "type": "inject",
+        "z": "eb10185dd71072d1",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "v": "{\"first_name\":\"Asiel\",\"last_name\":\"Hernandez\",\"email\":\"test@gmail.com\",\"phone\":\"5355885136\",\"age\":35,\"password\":\"12345678\",\"ip\":\"191.25.201.255\",\"web\":\"http://google.com\",\"date\":\"2024-11-30 14:32:26\",\"card\":\"4012888888881881\"}",
+                "vt": "json"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "{\"first_name\":\"Asiel\",\"last_name\":\"Hernandez\",\"email\":\"test@gmail.com\",\"phone\":\"5354815195\",\"age\":35,\"password\":\"12345678\",\"ip\":\"191.25.201.255\",\"web\":\"http://google.com\",\"date\":\"2024-11-30 14:32:26\",\"card\":\"4012888888881881\"}",
+        "payloadType": "json",
+        "x": 130,
+        "y": 240,
+        "wires": [
+            [
+                "1b63e424f6ac7376"
+            ]
+        ]
+    },
+    {
+        "id": "1b63e424f6ac7376",
+        "type": "object-validation",
+        "z": "eb10185dd71072d1",
+        "name": "",
+        "data": "payload",
+        "dataType": "msg",
+        "constraints": [
+            {
+                "property": "first_name",
+                "validator": "minlength",
+                "value": "5",
+                "error": "",
+                "typeValue": "num"
+            },
+            {
+                "property": "phone",
+                "validator": "phone",
+                "value": "",
+                "error": "",
+                "typeValue": "str"
+            },
+            {
+                "property": "first_name",
+                "validator": "format",
+                "value": "^[A-Za-z]+$",
+                "error": "",
+                "typeValue": "re"
+            },
+            {
+                "property": "web",
+                "validator": "url",
+                "value": "",
+                "error": "",
+                "typeValue": "str"
+            },
+            {
+                "property": "date",
+                "validator": "datetime",
+                "value": "",
+                "error": "",
+                "typeValue": "str"
+            },
+            {
+                "property": "card",
+                "validator": "credit-card",
+                "value": "",
+                "error": "",
+                "typeValue": "str"
+            }
+        ],
+        "x": 380,
+        "y": 240,
+        "wires": [
+            [
+                "6aacb9ee9af43bd5"
+            ],
+            [
+                "0842dfadb2f34813"
+            ]
+        ]
+    }
+]
