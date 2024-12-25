@@ -1,4 +1,16 @@
 var validate = require("validate.js");
+// Definimos la función de validación personalizada
+validate.validators.equal = function(value, options, key, attributes) {
+    if (options.typeValue == 'num' && attributes[key] !== parseFloat(options.attribute)) {
+        return options. message || `^${key} must be equal to ${options.attribute}`;
+    }
+    if (options.typeValue == 'str' && attributes[key] !== options.attribute) {
+        return options. message || `^${key} must be equal to ${options.attribute}`;
+    }
+    if (options.typeValue == 'json' && JSON.stringify(attributes[key]) !== options.attribute) {
+        return options. message || `^${key} must be equal to ${options.attribute}`;
+    }
+};
 validate.extend(validate.validators.datetime, {
     // The value is guaranteed not to be null or undefined but otherwise it
     // could be anything.
@@ -42,7 +54,6 @@ module.exports = function(RED) {
                     throw new Error(`msg.${node.data} must be a javascript object`);
                 if(node.constraints && Array.isArray(node.constraints)){
                     const constraints = generateConstraints(node.constraints)
-                    console.log('Contrains: ', constraints);
                     let result = validate(data, constraints)
                     if(result){
                         msg.payload = result
@@ -76,13 +87,14 @@ function getValueByIndex(obj, index) {
 function generateConstraints(constraints){
     let result = {}
     constraints.forEach(x=>{
-        result[x.property] = {}
-        typeContrain(result[x.property], x.validator, x.value, x.error)
+        if(!result[x.property])
+            result[x.property] = {}
+        typeContrain(result[x.property], x.validator, x.value, x.error, x.typeValue)
     })
     return result
 }
 
-function typeContrain(property, validator, value, error) {
+function typeContrain(property, validator, value, error, typeValue) {
     switch (validator) {
         case 'presence':{
             property['presence'] = {
@@ -103,6 +115,13 @@ function typeContrain(property, validator, value, error) {
             property['equality'] = {
                 attribute: value,
                 message: error || null
+            }
+        }break;
+        case 'equal':{
+            property['equal'] = {
+                attribute: value,
+                message: error || null,
+                typeValue: typeValue
             }
         }break;
         case 'format':{
