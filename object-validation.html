@@ -15,7 +15,8 @@
     
 </script>
 <script type="text/javascript">
-    const validators = [
+(function() {
+    let validators = [
         {value:"presence",label:"Required"},
         {value:"email",label:"Email"},
         {value:"equal",label:"Equal"},
@@ -34,7 +35,7 @@
         {value:"ipv6",label:"IP v6"},
     ];
 
-    const dataType = [
+    let dataType = [
         {value:"array",label:"Array"},
         {value:"integer",label:"Integer"},
         {value:"number",label:"Number"},
@@ -233,6 +234,7 @@
             this.constraints = constraints
         }
     });
+})();
 </script>
 
 
