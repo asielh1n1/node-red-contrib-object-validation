@@ -33,6 +33,8 @@
         {value:"credit-card",label:"Credit Card"},
         {value:"ipv4",label:"IP v4"},
         {value:"ipv6",label:"IP v6"},
+        {value:"domain",label:"Domain"},
+        {value:"json",label:"JSON"},
     ];
 
     let dataType = [
@@ -145,6 +147,14 @@
             case 'exclusion':{
                 types = ['json']
             }break;
+            case 'domain':{
+                types = ['str']
+                disabled = true
+            }break;
+            case 'json':{
+                types = ['str']
+                disabled = true
+            }break;
             default:{
 
             }break;
@@ -198,8 +208,8 @@
             constraints: { value: [] }          
         },
         inputs: 1,
-        outputs: 2,
-        outputLabels: ['success', 'error'],
+        outputs: 1,
+        outputLabels: ['stdout'],
         icon: "font-awesome/fa-check-circle-o",
         label: function() {
             return this.name || 'object-validation';
