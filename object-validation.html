@@ -17,24 +17,27 @@
 <script type="text/javascript">
 (function() {
     let validators = [
-        {value:"presence",label:"Required"},
+        {value:"required",label:"Required"},
         {value:"email",label:"Email"},
         {value:"equal",label:"Equal"},
         {value:"equality",label:"Equal to property"},        
-        {value:"format",label:"Regular Expression"},
+        {value:"pattern",label:"Regular Expression"},
         {value:"maxlength",label:"Maximum Length"},
         {value:"minlength",label:"Minimum Length"},
         {value:"type",label:"Type"},
         {value:"url",label:"URL"},
-        {value:"datetime",label:"Date"},
-        {value:"phone",label:"Phone"},
+        {value:"date",label:"Date"},
         {value:"inclusion",label:"In"},
         {value:"exclusion",label:"Not In"},
-        {value:"credit-card",label:"Credit Card"},
         {value:"ipv4",label:"IP v4"},
         {value:"ipv6",label:"IP v6"},
-        {value:"domain",label:"Domain"},
+        {value:"hostname",label:"Hostname"},
         {value:"json",label:"JSON"},
+        {value:"maximum_number",label:"Maximum number"},
+        {value:"minimum_number",label:"Minimum number"},
+        {value:"maximum_items",label:"Maximum Items"},
+        {value:"minimum_items",label:"Minimum Items"},
+        {value:"uuid",label:"UUID"},
     ];
 
     let dataType = [
@@ -42,8 +45,8 @@
         {value:"integer",label:"Integer"},
         {value:"number",label:"Number"},
         {value:"string",label:"String"},
-        {value:"date",label:"Date"},
-        {value:"boolean",label:"Boolean"}
+        {value:"boolean",label:"Boolean"},
+        {value:"object",label:"Object"}
     ];
 
     function insertConstraint(container, data){
@@ -72,7 +75,7 @@
         $(selectValidator).on('change', function(event) {
             createValueField(column3, selectValidator.val(), '')
         })
-        createValueField(column3, data.validator || 'presence', data.value, data.typeValue)
+        createValueField(column3, data.validator || 'required', data.value, data.typeValue)
     
         let inputError = $('<input type="text" class="node-input-column-error" style="width:100%">').appendTo(column4);
         if(data.error)
@@ -86,11 +89,11 @@
         let disabled = false
         $(container).empty();
         switch (type) {
-            case 'presence':{
+            case 'required':{
                 types = ['str']
                 disabled = true
             }break;
-            case 'datetime':{
+            case 'date':{
                 types = ['str']
                 disabled = true
             }break;
@@ -103,9 +106,6 @@
             }break;
             case 'equal':{
                 types = ['str','num','json']
-            }break;
-            case 'format':{
-                types = ['re']
             }break;
             case 'maxlength':{
                 types = ['num']
@@ -125,14 +125,6 @@
                 types = ['str']
                 disabled = true
             }break;
-            case 'phone':{
-                types = ['str']
-                disabled = true
-            }break;
-            case 'credit-card':{
-                types = ['str']
-                disabled = true
-            }break;
             case 'ipv4':{
                 types = ['str']
                 disabled = true
@@ -147,7 +139,7 @@
             case 'exclusion':{
                 types = ['json']
             }break;
-            case 'domain':{
+            case 'hostname':{
                 types = ['str']
                 disabled = true
             }break;
@@ -155,8 +147,24 @@
                 types = ['str']
                 disabled = true
             }break;
-            default:{
-
+            case 'pattern':{
+                types = ['str']
+            }break;
+            case 'maximum_number':{
+                types = ['num']
+            }break;
+            case 'minimum_number':{
+                types = ['num']
+            }break;
+            case 'maximum_items':{
+                types = ['num']
+            }break;
+            case 'minimum_items':{
+                types = ['num']
+            }break;
+            case 'uuid':{
+                types = ['str']
+                disabled = true
             }break;
         }
         if(type != 'type'){
@@ -205,7 +213,12 @@
             name: { value: "" },
             data: { value: 'payload', required: true },
             dataType: { value: 'msg' },
-            constraints: { value: [] }          
+            constraints: { value: [], validate:function(v) {
+                if(v && Array.isArray(v) && v.some(x=> !x.property)){
+                    return false
+                }
+                return true
+            }}         
         },
         inputs: 1,
         outputs: 1,
@@ -225,6 +238,7 @@
 
             $("#node-input-validators").css('min-height','300px').editableList({
                 removable: true,
+                sortable: true,
                 header: $('<div style="display:flex"></div>').append($.parseHTML("<div style='width:25%;display: inline; padding-left:15px'>Property</div><div style='width:25%;display: inline;'>Constraint</div><div style='width:25%;display: inline;'>Value</div><div style='width:25%;display: inline;'>Error Message</div>")),
                 addItem: function(container, index, data) {
                     insertConstraint(container, data)
@@ -242,6 +256,9 @@
             let _this = this
             const constraints = getConstraints()
             this.constraints = constraints
+            if(constraints && Array.isArray(constraints) && constraints.some(x=> !x.property)){
+                RED.notify('Some of the restrictions are blank', { type: "error", timeout: 5000 });
+            }
         }
     });
 })();
@@ -250,7 +267,7 @@
 
 
 <script type="text/markdown" data-help-name="object-validation">
-Validation of JavaScript objects with the Validate.js library.
+Validation of JavaScript objects with the AJV library.
 
 ### Inputs
 
@@ -268,10 +285,10 @@ Validation of JavaScript objects with the Validate.js library.
 ### Details
 
 To validate the same property of an object but with different constraints, you must add each constraint to the list of constraints each time you want to validate that property.
-You should note that for constraints like 'Equal to property', 'Regular Expression', 'Maximum Length', 'Minimum Length', 'Date', 'Phone', 'Credit Card', 'IP v4', 'IP v6', 'URL', the property values must strictly be of type 'string'. 
-For the constraints 'In', 'Not In', the values are a JSON object ({ }) or an array ([ ]).
+You should note that for constraints like 'Equal to property', 'Regular Expression', 'Maximum Length', 'Minimum Length', 'Date', 'IP v4', 'IP v6', 'URL', the property values must strictly be of type 'string'. 
+For the constraints 'In', 'Not In', the values are a array ([ ]).
 
 ### References
 
- - [Validate.js](https://validatejs.org/#validate-js)
+ - [AJV](https://ajv.js.org/guide/getting-started.html)
 </script>

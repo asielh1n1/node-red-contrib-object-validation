@@ -1,7 +1,7 @@
 {
   "name": "node-red-contrib-object-validation",
-  "version": "1.0.5",
-  "description": "Validation of JavaScript objects with the Validate.js library.",
+  "version": "1.0.6",
+  "description": "Validation of JavaScript objects with the AJV library.",
   "main": "object-validation.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -30,6 +30,8 @@
     "url": "https://github.com/asielh1n1/node-red-contrib-object-validation.git"
   },
   "dependencies": {
-    "validate.js": "^0.13.1"
+    "ajv": "^8.17.1",
+    "ajv-errors": "^3.0.0",
+    "ajv-formats": "^3.0.1"
   }
 }

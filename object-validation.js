@@ -3,63 +3,11 @@
 
 
 module.exports = function(RED) {
-    var validate = require("validate.js");
-    // Expresión regular para validar dominios DNS
-    const DOMAIN_REGEX = /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9][a-z0-9-]{0,61}[a-z0-9]$/i;
-    validate.validators.domain = function(value, options, key, attributes) {
-        if (!value) {
-            return null;
-        }
-        if (!DOMAIN_REGEX.test(value)) {
-            return options. message || "is invalid";
-        }
-    };
-    validate.validators.json = function(value, options, key, attributes) {
-        if (!value) {
-          return null;
-        }
-        try {
-          JSON.parse(value);
-          return null;
-        } catch (e) {
-          return "is invalid";
-        }
-    };
-    // Definimos la función de validación personalizada
-    validate.validators.equal = function(value, options, key, attributes) {
-        if (options.typeValue == 'num' && attributes[key] !== parseFloat(options.attribute)) {
-            return options. message || `^${key} must be equal to ${options.attribute}`;
-        }
-        if (options.typeValue == 'str' && attributes[key] !== options.attribute) {
-            return options. message || `^${key} must be equal to ${options.attribute}`;
-        }
-        if (options.typeValue == 'json' && JSON.stringify(attributes[key]) !== options.attribute) {
-            return options. message || `^${key} must be equal to ${options.attribute}`;
-        }
-    };
-    validate.extend(validate.validators.datetime, {
-        // The value is guaranteed not to be null or undefined but otherwise it
-        // could be anything.
-        parse: function(value, options) {
-            const date = new Date(value);
-            const timestamp = date.getTime();
-            if (isNaN(timestamp)) {
-                return NaN;
-            }
-            return timestamp;
-        },
-        // Input is a unix timestamp
-        format: function(value, options) {
-            const date = new Date(value);
-            const year = date.getFullYear();
-            const month = String(date.getMonth() + 1).padStart(2, '0'); // Months are zero-based
-            const day = String(date.getDate()).padStart(2, '0');
-            const hours = String(date.getHours()).padStart(2, '0');
-            const minutes = String(date.getMinutes()).padStart(2, '0');
-            const seconds = String(date.getSeconds()).padStart(2, '0');
-            return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
-        }
-    });
+    const Ajv = require("ajv")
+    const ajv = new Ajv({ allErrors: true, messages: true, $data: true })
+    require("ajv-formats")(ajv);
+    require("ajv-errors")(ajv);
+
     function ObjectValidation(config) {
         RED.nodes.createNode(this,config);
         this.name = config.name;
@@ -68,7 +16,7 @@ module.exports = function(RED) {
         this.constraints = config.constraints;
         let node = this;
         
-        node.on('input', async function(msg) {
+        node.on('input', function(msg) {
             try {
                 let data =  getValueByIndex(msg, node.data)                
                 if(!data || typeof data !== 'object' || Array.isArray(data) || (data instanceof Date))
@@ -83,15 +31,25 @@ module.exports = function(RED) {
                         }
                         return acc;
                     }, {});
-                    const constraints = generateConstraints(node.constraints)
-                    let result = validate(data, constraints)
-                    if(result){
-                        msg.payload = result
-                        return node.error(JSON.stringify(result), msg);
+                    let schema = {
+                        type: "object",
+                        properties: {},
+                        required: [],
+                        additionalProperties: true,
+                        errorMessage: {required:{}}
+                    };
+                    schema = generateConstraints(node.constraints, schema)
+                    const validate = ajv.compile(schema)
+                    const valid = validate(data)
+                    if(!valid){
+                        msg.payload = validate.errors.map(x=> x.message)
+                        node.error(validate.errors, msg);
+                        return;
                     }
                 } 
                 node.send(msg); 
             } catch (error) {
+                msg.payload = error
                 node.error(error, msg);
             }
             
@@ -100,7 +58,7 @@ module.exports = function(RED) {
     RED.nodes.registerType("object-validation", ObjectValidation);
 
     function getValueByIndex(obj, index) {
-        const keys = index.split('.');
+        let keys = index.split('.');
         let value = obj;
         for (let key of keys) {
             if (value === undefined) {
@@ -111,127 +69,131 @@ module.exports = function(RED) {
         return value;
     }
     
-    function generateConstraints(constraints){
-        let result = {}
+    function generateConstraints(constraints, schema){
         constraints.forEach(x=>{
-            if(!result[x.property])
-                result[x.property] = {}
-            typeContrain(result[x.property], x.validator, x.value, x.error, x.typeValue)
+            typeContrain(x.property, x.validator, x.value, x.typeValue,x.error, schema)
         })
-        return result
+        return schema
     }
     
-    function typeContrain(property, validator, value, error, typeValue) {
+    function typeContrain(property, validator, value, typeValue, error, schema) {
+        if(!schema.properties[property]){
+            schema.properties[property] = {
+                errorMessage: {}
+            }
+        }
         switch (validator) {
-            case 'presence':{
-                property['presence'] = {
-                    message: error || null
-                }
-            }break;
-            case 'email':{
-                property['email'] = {
-                    message: error || null
-                }
-            }break;
-            case 'datetime':{
-                property['datetime'] = {
-                    message: error || null
-                }
-            }break;
-            case 'equality':{
-                property['equality'] = {
-                    attribute: value,
-                    message: error || null
-                }
-            }break;
-            case 'equal':{
-                property['equal'] = {
-                    attribute: value,
-                    message: error || null,
-                    typeValue: typeValue
-                }
-            }break;
-            case 'format':{
-                property['format'] = {
-                    pattern: value,
-                    flags: "g",
-                    message: error || null
-                }
-            }break;
-            case 'maxlength':{
-                property['length'] = {
-                    maximum: parseInt(value),
-                    message: error || null
-                }
-            }break;
-            case 'minlength':{
-                property['length'] = {
-                    minimum: parseInt(value),
-                    message: error || null
-                }
+            case 'required':{
+                schema.required.push(property)
+                schema.errorMessage.required[property] = error || `The ${property} field is required`
             }break;
             case 'type':{
-                property['type'] = {
-                    type: value,
-                    message: error || null
-                }
+                schema.properties[property].type = value
+                schema.properties[property].errorMessage.type = error || `The ${property} field must be of type ${value}`
+            }break;
+            case 'email':{
+                schema.properties[property].type = 'string'
+                schema.properties[property].errorMessage.type = error || `The ${property} field must be of type string`
+                schema.properties[property].format = 'email'
+                schema.properties[property].errorMessage.format = error || `The ${property}  field is not a valid email address.`
+            }break;
+            case 'equal':{
+                schema.properties[property].const = value
+                schema.properties[property].errorMessage.const = error || `The ${property} field must be equal to ${value}`
+            }break;
+            case 'equality':{
+                schema.properties[property].const = { $data: `1/${value}` }
+                schema.properties[property].errorMessage.const = error || `The value of the ${property} field must be equal to the value of the ${value} field.`
+            }break;
+            case 'pattern':{
+                schema.properties[property].pattern = value
+                schema.properties[property].errorMessage.pattern = error || `The field ${property} does not match the regular expression ${value}`
+            }break;
+            case 'maxlength':{
+                schema.properties[property].type = 'string'
+                schema.properties[property].errorMessage.type = error || `The ${property} field must be of type string`
+                schema.properties[property].maxLength = parseInt(value)
+                schema.properties[property].errorMessage.maxLength = error || `The ${property} field must have a maximum size of ${value}`
+            }break;
+            case 'minlength':{
+                schema.properties[property].type = 'string'
+                schema.properties[property].errorMessage.type = error || `The ${property} field must be of type string`
+                schema.properties[property].minLength = parseInt(value)
+                schema.properties[property].errorMessage.minLength = error || `The ${property} field must have a minimum size of ${value}`
             }break;
             case 'url':{
-                property['url'] = {
-                    message: error || null
-                }
+                schema.properties[property].type = 'string'
+                schema.properties[property].errorMessage.type = error || `The ${property} field must be of type string`
+                schema.properties[property].format = 'uri'
+                schema.properties[property].errorMessage.format = error || `The ${property} field is not a valid URL.`
             }break;
-            case 'phone':{
-                property['format'] = {
-                    pattern: /^\(?(\d{3})\)?[-]?(\d{3})[-]?(\d{4})$/,
-                    flags: "g",
-                    message: error || 'is an invalid phone number'
-                }
-            }break;
-            case 'credit-card':{
-                property['format'] = {
-                    pattern: /^(?:(4[0-9]{12}(?:[0-9]{3})?)|(5[1-5][0-9]{14})|(6(?:011|5[0-9]{2})[0-9]{12})|(3[47][0-9]{13})|(3(?:0[0-5]|[68][0-9])[0-9]{11})|((?:2131|1800|35[0-9]{3})[0-9]{11}))$/,
-                    flags: "g",
-                    message: error || 'is an invalid credit card'
-                }
-            }break;
-            case 'ipv4':{
-                property['format'] = {
-                    pattern: /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/,
-                    flags: "g",
-                    message: error || 'is an invalid IP'
-                }
-            }break;
-            case 'ipv6':{
-                property['format'] = {
-                    pattern: /^(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))$/,
-                    flags: "g",
-                    message: error || 'is an invalid IP'
-                }
+            case 'date':{
+                schema.properties[property].format = 'date'
+                schema.properties[property].errorMessage.format = error || `The ${property} field is not a valid date.`
             }break;
             case 'inclusion':{
-                property['inclusion'] = {
-                    within: JSON.parse(value),
-                    message: error || null
-                }
+                schema.properties[property].type = 'array'
+                schema.properties[property].errorMessage.type = error || `The ${property} field must be of type array`                
+                schema.properties[property].enum = JSON.parse(value)
+                schema.properties[property].errorMessage.enum = error || `The value of the ${property} field is not included in the ${value} list.`
             }break;
             case 'exclusion':{
-                property['exclusion'] = {
-                    within: JSON.parse(value),
-                    message: error || null
-                }
+                schema.properties[property].type = 'array'
+                schema.properties[property].errorMessage.type = error || `The ${property} field must be of type array`                   
+                schema.properties[property].not = {enum:JSON.parse(value)}
+                schema.properties[property].errorMessage.not = error || `The value of the field ${property} cannot be included in the list ${value}.`
             }break;
-            case 'domain':{
-                property['domain'] = {
-                    within: value,
-                    message: error || null
-                }
+            case 'ipv4':{
+                schema.properties[property].type = 'string'
+                schema.properties[property].errorMessage.type = error || `The ${property} field must be of type string`
+                schema.properties[property].format = 'ipv4'
+                schema.properties[property].errorMessage.format = error || `The ${property} field is not a valid IPv4.`
+            }break;
+            case 'ipv6':{
+                schema.properties[property].type = 'string'
+                schema.properties[property].errorMessage.type = error || `The ${property} field must be of type string`
+                schema.properties[property].format = 'ipv6'
+                schema.properties[property].errorMessage.format = error || `The ${property} field is not a valid IPv6.`
+            }break;
+            case 'hostname':{
+                schema.properties[property].type = 'string'
+                schema.properties[property].errorMessage.type = error || `The ${property} field must be of type string`
+                schema.properties[property].format = 'hostname'
+                schema.properties[property].errorMessage.format = error || `The ${property} field is not a valid hostname.`
             }break;
             case 'json':{
-                property['json'] = {
-                    within: value,
-                    message: error || null
-                }
+                schema.properties[property].format = 'json-pointer'
+                schema.properties[property].errorMessage.format = error || `The ${property} field is not a valid JSON.`
+            }break;
+            case 'maximum_number':{
+                schema.properties[property].type = 'number'
+                schema.properties[property].errorMessage.type = error || `The ${property} field must be of type number`
+                schema.properties[property].maximum = parseFloat(value)
+                schema.properties[property].errorMessage.maximum = error || `The value of the ${property} field cannot be greater than ${value}.`
+            }break;
+            case 'minimum_number':{
+                schema.properties[property].type = 'number'
+                schema.properties[property].errorMessage.type = error || `The ${property} field must be of type number`
+                schema.properties[property].minimum = parseFloat(value)
+                schema.properties[property].errorMessage.minimum = error || `The value of the ${property} field cannot be less than ${value}.`
+            }break;
+            case 'maximum_items':{
+                schema.properties[property].type = 'array'
+                schema.properties[property].errorMessage.type = error || `The ${property} field must be of type array`
+                schema.properties[property].maxItems = parseFloat(value)
+                schema.properties[property].errorMessage.maxItems = error || `The ${property} field cannot have more than ${value} elements..`
+            }break;
+            case 'minimum_items':{
+                schema.properties[property].type = 'array'
+                schema.properties[property].errorMessage.type = error || `The ${property} field must be of type array`
+                schema.properties[property].minItems = parseFloat(value)
+                schema.properties[property].errorMessage.minItems = error || `The ${property} field cannot have less than ${value} elements.`
+            }break;
+            case 'uuid':{
+                schema.properties[property].type = 'string'
+                schema.properties[property].errorMessage.type = error || `The ${property} field must be of type string`
+                schema.properties[property].format = 'uuid'
+                schema.properties[property].errorMessage.format = error || `The field ${property} is not a valid UUID`
             }break;
         }
     }

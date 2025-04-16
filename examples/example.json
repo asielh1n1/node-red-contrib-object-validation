@@ -1,59 +1,120 @@
 [
     {
-        "id": "eb10185dd71072d1",
+        "id": "a2bab5c285e5f68a",
         "type": "tab",
-        "label": "Validation",
+        "label": "Flow 1",
         "disabled": false,
         "info": "",
         "env": []
     },
     {
-        "id": "0842dfadb2f34813",
-        "type": "debug",
-        "z": "eb10185dd71072d1",
-        "name": "debug error",
-        "active": true,
-        "tosidebar": true,
-        "console": false,
-        "tostatus": false,
-        "complete": "payload",
-        "targetType": "msg",
-        "statusVal": "",
-        "statusType": "auto",
-        "x": 710,
-        "y": 280,
-        "wires": []
+        "id": "4b51850c3a3f5590",
+        "type": "object-validation",
+        "z": "a2bab5c285e5f68a",
+        "name": "",
+        "data": "payload",
+        "dataType": "msg",
+        "constraints": [
+            {
+                "property": "id",
+                "validator": "required",
+                "value": "",
+                "error": "",
+                "typeValue": "str"
+            },
+            {
+                "property": "id",
+                "validator": "uuid",
+                "value": "",
+                "error": "Invalid ID",
+                "typeValue": "str"
+            },
+            {
+                "property": "first_name",
+                "validator": "required",
+                "value": "",
+                "error": "",
+                "typeValue": "str"
+            },
+            {
+                "property": "first_name",
+                "validator": "maxlength",
+                "value": "50",
+                "error": "",
+                "typeValue": "num"
+            },
+            {
+                "property": "age",
+                "validator": "maximum_number",
+                "value": "80",
+                "error": "",
+                "typeValue": "num"
+            },
+            {
+                "property": "age",
+                "validator": "minimum_number",
+                "value": "18",
+                "error": "",
+                "typeValue": "num"
+            },
+            {
+                "property": "phones",
+                "validator": "maximum_items",
+                "value": "3",
+                "error": "",
+                "typeValue": "num"
+            },
+            {
+                "property": "phones",
+                "validator": "minimum_items",
+                "value": "1",
+                "error": "",
+                "typeValue": "num"
+            },
+            {
+                "property": "active",
+                "validator": "type",
+                "value": "boolean",
+                "error": ""
+            },
+            {
+                "property": "website",
+                "validator": "url",
+                "value": "",
+                "error": "",
+                "typeValue": "str"
+            },
+            {
+                "property": "email",
+                "validator": "email",
+                "value": "",
+                "error": "",
+                "typeValue": "str"
+            },
+            {
+                "property": "birthdate",
+                "validator": "date",
+                "value": "",
+                "error": "",
+                "typeValue": "str"
+            }
+        ],
+        "x": 340,
+        "y": 80,
+        "wires": [
+            [
+                "ec7e1f0dca41dbe3"
+            ]
+        ]
     },
     {
-        "id": "6aacb9ee9af43bd5",
-        "type": "debug",
-        "z": "eb10185dd71072d1",
-        "name": "debug success",
-        "active": true,
-        "tosidebar": true,
-        "console": false,
-        "tostatus": false,
-        "complete": "payload",
-        "targetType": "msg",
-        "statusVal": "",
-        "statusType": "auto",
-        "x": 720,
-        "y": 180,
-        "wires": []
-    },
-    {
-        "id": "ef855bc6db9bcb85",
+        "id": "b81a71f69efe9d60",
         "type": "inject",
-        "z": "eb10185dd71072d1",
+        "z": "a2bab5c285e5f68a",
         "name": "",
         "props": [
             {
                 "p": "payload"
-            },
-            {
-                "p": "topic",
-                "v": "{\"first_name\":\"Asiel\",\"last_name\":\"Hernandez\",\"email\":\"test@gmail.com\",\"phone\":\"5355885136\",\"age\":35,\"password\":\"12345678\",\"ip\":\"191.25.201.255\",\"web\":\"http://google.com\",\"date\":\"2024-11-30 14:32:26\",\"card\":\"4012888888881881\"}",
-                "vt": "json"
             }
         ],
         "repeat": "",
@@ -61,76 +122,63 @@
         "once": false,
         "onceDelay": 0.1,
         "topic": "",
-        "payload": "{\"first_name\":\"Asiel\",\"last_name\":\"Hernandez\",\"email\":\"test@gmail.com\",\"phone\":\"5354815195\",\"age\":35,\"password\":\"12345678\",\"ip\":\"191.25.201.255\",\"web\":\"http://google.com\",\"date\":\"2024-11-30 14:32:26\",\"card\":\"4012888888881881\"}",
+        "payload": "{\"id\":\"9a762dc1-0a60-498f-be59-121a327dce85\",\"first_name\":\"User1\",\"email\":\"user1@gmail.com\",\"age\":30,\"active\":true,\"phones\":[\"7453624362\"],\"website\":\"http://google.com\",\"birthdate\":\"2000-05-17\"}",
         "payloadType": "json",
         "x": 130,
-        "y": 240,
+        "y": 80,
         "wires": [
             [
-                "1b63e424f6ac7376"
+                "4b51850c3a3f5590"
             ]
         ]
     },
     {
-        "id": "1b63e424f6ac7376",
-        "type": "object-validation",
-        "z": "eb10185dd71072d1",
-        "name": "",
-        "data": "payload",
-        "dataType": "msg",
-        "constraints": [
-            {
-                "property": "first_name",
-                "validator": "minlength",
-                "value": "5",
-                "error": "",
-                "typeValue": "num"
-            },
-            {
-                "property": "phone",
-                "validator": "phone",
-                "value": "",
-                "error": "",
-                "typeValue": "str"
-            },
-            {
-                "property": "first_name",
-                "validator": "format",
-                "value": "^[A-Za-z]+$",
-                "error": "",
-                "typeValue": "re"
-            },
-            {
-                "property": "web",
-                "validator": "url",
-                "value": "",
-                "error": "",
-                "typeValue": "str"
-            },
-            {
-                "property": "date",
-                "validator": "datetime",
-                "value": "",
-                "error": "",
-                "typeValue": "str"
-            },
-            {
-                "property": "card",
-                "validator": "credit-card",
-                "value": "",
-                "error": "",
-                "typeValue": "str"
-            }
-        ],
-        "x": 380,
-        "y": 240,
+        "id": "ec7e1f0dca41dbe3",
+        "type": "debug",
+        "z": "a2bab5c285e5f68a",
+        "name": "success",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 540,
+        "y": 80,
+        "wires": []
+    },
+    {
+        "id": "3562974d24b68249",
+        "type": "catch",
+        "z": "a2bab5c285e5f68a",
+        "name": "error",
+        "scope": null,
+        "uncaught": false,
+        "x": 310,
+        "y": 120,
         "wires": [
             [
-                "6aacb9ee9af43bd5"
-            ],
-            [
-                "0842dfadb2f34813"
+                "06a065a39edd16fa"
             ]
         ]
+    },
+    {
+        "id": "06a065a39edd16fa",
+        "type": "debug",
+        "z": "a2bab5c285e5f68a",
+        "name": "error",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 530,
+        "y": 120,
+        "wires": []
     }
 ]
