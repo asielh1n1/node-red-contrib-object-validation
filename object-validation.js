@@ -24,9 +24,7 @@ module.exports = function(RED) {
                 if(node.constraints && Array.isArray(node.constraints)){
                     // Eliminamos los valores de string vacio
                     data = Object.keys(data).reduce((acc, curr) => {
-                        if (typeof data[curr] === 'string' && data[curr].trim() === "") {
-                            acc[curr] = null;
-                        } else {
+                        if (typeof data[curr] === 'string' && data[curr].trim() !== "") {
                             acc[curr] = data[curr];
                         }
                         return acc;
