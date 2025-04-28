@@ -1,6 +1,6 @@
 {
   "name": "node-red-contrib-object-validation",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "Validation of JavaScript objects with the AJV library.",
   "main": "object-validation.js",
   "scripts": {

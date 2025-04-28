@@ -12,7 +12,10 @@
         <label><i class="fa fa-check-circle"></i> Constraints</label>
         <ol id="node-input-validators"></ol>
     </div>
-    
+    <div class="form-row">
+        <label><i class="fa fa-tag"></i> Additional properties</label>
+        <input type="text" id="node-input-additionalProperties" placeholder="additionalProperties">
+    </div>
 </script>
 <script type="text/javascript">
 (function() {
@@ -218,7 +221,8 @@
                     return false
                 }
                 return true
-            }}         
+            }} ,
+            additionalProperties: { value: true}     
         },
         inputs: 1,
         outputs: 1,
@@ -234,6 +238,12 @@
                 type: 'msg',
                 types:['msg'],
                 typeField: "#node-input-dataType"
+            })
+
+            $("#node-input-additionalProperties").typedInput({
+                type: 'bool',
+                types:['bool'],
+                hasValue: 'false'
             })
 
             $("#node-input-validators").css('min-height','300px').editableList({
